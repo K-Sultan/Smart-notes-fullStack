@@ -3,21 +3,27 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
+// Import Routes
+import authRoutes from './routes/authRoutes.js';
 
+// Load Environment Variables
 dotenv.config();
 
 const app = express();
 
+// Middleware
+app.use(express.json()); // Parse incoming JSON
+app.use(cors());         // Enable Cross-Origin Resource Sharing
 
-app.use(express.json());
-app.use(cors());
+// Routes
+app.use('/auth', authRoutes);
 
-
+// Root Health Check
 app.get('/', (req, res) => {
     res.send('Smart Notes API is running!');
 });
 
-
+// Database Connection & Server Startup
 const PORT = process.env.PORT || 5000;
 
 mongoose.connect(process.env.MONGO_URI)
@@ -25,4 +31,7 @@ mongoose.connect(process.env.MONGO_URI)
         console.log('Connected to MongoDB');
         app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     })
-    .catch((err) => console.log('Database connection error:', err));
+    .catch((err) => {
+        console.error('Database connection error:', err.message);
+        process.exit(1); // Exit process if DB fails to connect
+    });
