@@ -1,4 +1,12 @@
+import express from 'express';
+import { getNotes, createNote, updateNote, deleteNote } from '../controllers/noteController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
-// Now this route is protected!
-router.get('/', protect, getNotes);
+const router = express.Router();
+
+router.use(protect); // All routes below require authentication
+
+router.route('/').get(getNotes).post(createNote);
+router.route('/:id').patch(updateNote).delete(deleteNote);
+
+export default router;

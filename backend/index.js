@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 // Import Routes
 import authRoutes from './routes/authRoutes.js';
-
+import noteRoutes from './routes/noteRoutes.js';
 // Load Environment Variables
 dotenv.config();
 
@@ -17,6 +17,7 @@ app.use(cors());         // Enable Cross-Origin Resource Sharing
 
 // Routes
 app.use('/auth', authRoutes);
+app.use('/notes', noteRoutes);
 
 // Root Health Check
 app.get('/', (req, res) => {
