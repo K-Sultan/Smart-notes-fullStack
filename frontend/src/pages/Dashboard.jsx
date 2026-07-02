@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import API from '../api/axios';
-import { Search, Plus, Tag, Clock } from 'lucide-react';
+import { Search, Plus, Tag, Clock, BookText } from 'lucide-react';
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -106,8 +106,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
-// Required for the empty state icon
-import { BookText } from 'lucide-react';
 
 export default Dashboard;

@@ -18,7 +18,8 @@ export const register = async (req, res) => {
 
         res.status(201).json({ user: { id: user._id, name: user.name, email: user.email }, token });
     } catch (error) {
-        res.status(500).json({ message: "Something went wrong" });
+        console.error("Register Error:", error);
+        res.status(500).json({ message: error.message || "Something went wrong" });
     }
 };
 
@@ -41,7 +42,8 @@ export const login = async (req, res) => {
 
         res.status(200).json({ user: { id: user._id, name: user.name, email: user.email }, token });
     } catch (error) {
-        res.status(500).json({ message: "Something went wrong" });
+        console.error("Login Error:", error);
+        res.status(500).json({ message: error.message || "Something went wrong" });
     }
 };
 
