@@ -1,16 +1,18 @@
-import axios from "axios";
+import axios from 'axios';
 
 const API = axios.create({
-    baseURL: "http://localhost:5000/"
-})
-//automatically attach the token to the request headers
-API.interceptors.request.use((req) => {
-    const storedData = JSON.parse(localStorage.getItem("user"))
+  baseURL: 'http://localhost:5000',
+});
 
-    if (storedData && storedData.token) {
-        req.headers.Authorization = `Bearer ${storedData.token}`
-    }
-    return req
-})
+// Add a request interceptor to attach the token
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
 
-export default API
+export default API;
