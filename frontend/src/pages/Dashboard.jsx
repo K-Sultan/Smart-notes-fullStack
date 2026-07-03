@@ -2,28 +2,37 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import API from '../api/axios';
-import { Search, Plus, Tag, Clock, BookText } from 'lucide-react';
+import { Search, Plus, Tag, Clock, BookText, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [page, setPage] = useState(1);
 
-  const { data: notes = [], isLoading, isError } = useQuery({
-    queryKey: ['notes'],
+  // Reset page to 1 when search or category changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterCategory]);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
     queryFn: async () => {
-      const response = await API.get('/notes');
+      const response = await API.get('/notes/categories');
       return response.data;
     }
   });
 
-  const categories = [...new Set(notes.map(note => note.category).filter(Boolean))];
-
-  const filteredNotes = notes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (note.content && note.content.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = filterCategory ? note.category === filterCategory : true;
-    return matchesSearch && matchesCategory;
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['notes', page, searchTerm, filterCategory],
+    queryFn: async () => {
+      const response = await API.get(`/notes?page=${page}&limit=9&search=${searchTerm}&category=${filterCategory}`);
+      return response.data;
+    }
   });
+
+  const notes = data?.notes || [];
+  const currentPage = data?.currentPage || 1;
+  const totalPages = data?.totalPages || 1;
 
   return (
     <div>
@@ -66,7 +75,7 @@ const Dashboard = () => {
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--danger-color)' }}>
           Failed to load notes.
         </div>
-      ) : filteredNotes.length === 0 ? (
+      ) : notes.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '4rem' }}>
           <BookText size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
           <h3>No notes found</h3>
@@ -75,33 +84,59 @@ const Dashboard = () => {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-          {filteredNotes.map(note => (
-            <Link to={`/notes/${note._id}`} key={note._id} className="card" style={{ display: 'flex', flexDirection: 'column', color: 'inherit' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                  {note.title}
-                </h3>
-                {note.status === 'archived' && (
-                  <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--border-color)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>Archived</span>
-                )}
-              </div>
-              <p style={{ color: 'var(--text-muted)', flex: 1, marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {note.content || "No content"}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 'auto' }}>
-                {note.category ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Tag size={14} /> {note.category}
-                  </div>
-                ) : <div></div>}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <Clock size={14} /> {new Date(note.createdAt).toLocaleDateString()}
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {notes.map(note => (
+              <Link to={`/notes/${note._id}`} key={note._id} className="card" style={{ display: 'flex', flexDirection: 'column', color: 'inherit' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    {note.title}
+                  </h3>
+                  {note.status === 'archived' && (
+                    <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--border-color)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>Archived</span>
+                  )}
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+                <p style={{ color: 'var(--text-muted)', flex: 1, marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {note.content || "No content"}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 'auto' }}>
+                  {note.category ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Tag size={14} /> {note.category}
+                    </div>
+                  ) : <div></div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <Clock size={14} /> {new Date(note.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                style={{ display: 'flex', alignItems: 'center', padding: '0.5rem' }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <span style={{ fontWeight: 'bold' }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                style={{ display: 'flex', alignItems: 'center', padding: '0.5rem' }}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

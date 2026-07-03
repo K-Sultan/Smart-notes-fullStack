@@ -3,8 +3,37 @@ import Note from '../models/Note.js';
 // Get all notes for the logged-in user
 export const getNotes = async (req, res) => {
     try {
-        const notes = await Note.find({ userId: req.user.id }).sort({ createdAt: -1 });
-        res.status(200).json(notes);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 9;
+        const skip = (page - 1) * limit;
+        const search = req.query.search || '';
+        const category = req.query.category || '';
+
+        const query = { userId: req.user.id };
+
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { content: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        if (category) {
+            query.category = category;
+        }
+
+        const totalNotes = await Note.countDocuments(query);
+        const notes = await Note.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.status(200).json({
+            notes,
+            currentPage: page,
+            totalPages: Math.ceil(totalNotes / limit),
+            totalNotes
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -77,6 +106,16 @@ export const deleteNote = async (req, res) => {
 
         await note.deleteOne();
         res.status(200).json({ message: "Note deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Get all unique categories for a user
+export const getCategories = async (req, res) => {
+    try {
+        const categories = await Note.distinct('category', { userId: req.user.id });
+        res.status(200).json(categories.filter(Boolean));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
